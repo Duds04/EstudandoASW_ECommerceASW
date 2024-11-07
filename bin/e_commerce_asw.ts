@@ -3,6 +3,9 @@ import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { ECommerceAswStack } from '../lib/e_commerce_asw-stack';
 
+
+// Ponto de entrada da aplicação (Primeira coisa a ser executada)
+
 const app = new cdk.App();
 new ECommerceAswStack(app, 'ECommerceAswStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
