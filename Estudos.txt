@@ -1,0 +1,7 @@
+package.json 
+    arquivo que identifica as versões de instalação das dependencias do nosso projeto
+    devDependencies --> bibliotecas a serem instaladas para utilizar no momento do desenvolvimento
+
+
+Facilita codificação de typescript no ambiente da AWS
+    "@types/aws-lambda": "^8.10.125", 
