@@ -55,7 +55,7 @@ export class ProductsAppStack extends cdk.Stack{
                 name: "id",
                 type: dynamodb.AttributeType.STRING,
             },
-            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            billingMode: dynamodb.BillingMode.PROVISIONED,
             readCapacity: 1,
             writeCapacity: 1,
         })

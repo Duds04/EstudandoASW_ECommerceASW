@@ -25,16 +25,16 @@ export async function handler(event: APIGatewayProxyEvent,
         
         // Verificando qual metodo foi acessado
         if(event.httpMethod === "PUT"){
-            console.log(`PUT /products/${productId}"`)
+            console.log(`PUT /products/${productId}`)
             return {
                 statusCode: 200, // o codigo de status representa que o recurso foi atualizado
-                body: "PUT /products", 
+                body: `PUT /products/${productId}`, 
             }
         } else if(event.httpMethod === "DELETE"){
-            console.log(`DELETE /products/${productId}"`)
+            console.log(`DELETE /products/${productId}`)
             return {
                 statusCode: 200, // o codigo de status representa que o recurso foi deletado com sucesso
-                body: "DELETE /products", 
+                body: `DELETE /products/${productId}`, 
             }
         }
       }
