@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { ProductRepository } from "/opt/nodejs/productsLayer";
 import { DynamoDB } from "aws-sdk";
-// import * as AWSXRay from "aws-xray-sdk";
+import * as AWSXRay from "aws-xray-sdk";
 
 // Função de procurar produtos
 
@@ -16,7 +16,7 @@ import { DynamoDB } from "aws-sdk";
  * Capturar todas as execulções da biblioteca sdk
  *  XRay captura e mede o tempo de acesso usando o sdk em qualquer contexto
  */
-// AWSXRay.captureAWSClient(require("aws-sdk"))
+AWSXRay.captureAWS(require('aws-sdk'))
 
 // Capturando a variavel de ambiente que foi passada para a função lambda para fazer a tabela do DynamoDB
 const productsDbd = process.env.PRODUCTS_DDB!

@@ -101,7 +101,7 @@ export class ProductsAppStack extends cdk.Stack{
                 PRODUCTS_DDB: this.productsDbd.tableName,
             },
             layers: [productsLayer],
-            // tracing: lambda.Tracing.ACTIVE,
+            tracing: lambda.Tracing.ACTIVE,
         })
 
         // Permissão para a função lambda ler dados da tabela de produtos
@@ -127,7 +127,7 @@ export class ProductsAppStack extends cdk.Stack{
                 PRODUCTS_DDB: this.productsDbd.tableName,
             },
             layers: [productsLayer],
-            // tracing: lambda.Tracing.ACTIVE,
+            tracing: lambda.Tracing.ACTIVE,
         })
         
         // Escrever informações na tabela
