@@ -84,6 +84,7 @@ export class ProductsAppStack extends cdk.Stack{
                 evorimronment variables (variaveis de ambiente) para a função lambda
                     Nome Variavel de ambinete: nome da tabela (pegando direto do componente)
                 layers: lugar onde a função pode buscar trechos de codigo
+                tracing: habilita o tracing (rastreamento) da função lambda (para saber o que acontece dentro da função) [pequeno impacto de custo]
          */
         this.productsFetchHandler = new lambdaNodeJS.NodejsFunction(this, "ProductsFetchFunction", {
             runtime: lambda.Runtime.NODEJS_18_X,
@@ -100,14 +101,11 @@ export class ProductsAppStack extends cdk.Stack{
                 PRODUCTS_DDB: this.productsDbd.tableName,
             },
             layers: [productsLayer],
+            // tracing: lambda.Tracing.ACTIVE,
         })
 
         // Permissão para a função lambda ler dados da tabela de produtos
         this.productsDbd.grantReadData(this.productsFetchHandler)
-
-        // Permissão para a função lambda escrever dados na tabela de produtos
-        this.productsDbd.grantWriteData(this.productsFetchHandler)
-          
 
         /*
             Função para fazer a manipulação de produtos (criar, deletar e editar produtos)
@@ -129,13 +127,10 @@ export class ProductsAppStack extends cdk.Stack{
                 PRODUCTS_DDB: this.productsDbd.tableName,
             },
             layers: [productsLayer],
+            // tracing: lambda.Tracing.ACTIVE,
         })
         
         // Escrever informações na tabela
         this.productsDbd.grantWriteData(this.productsAdminHandler)
-
-        // Permissão para a função lambda ler dados da tabela de produtos
-        this.productsDbd.grantReadData(this.productsAdminHandler)
-
     }
 }

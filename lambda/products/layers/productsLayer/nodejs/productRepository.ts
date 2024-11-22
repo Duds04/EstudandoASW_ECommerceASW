@@ -12,6 +12,7 @@ export interface Product {
     code: string,
     price: number,
     model: string,
+    productUrl: string, // identificador "url" é reservado no DynamoDB
 }
 
 // Criando metodos para acessar a tabela
@@ -22,7 +23,7 @@ export class ProductRepository {
     private productsDdb: string
 
     // Params Cliente e Nome da tabela
-    constructor(ddbClient: DocumentClient, productsDdb: string){
+    constructor(ddbClient: DocumentClient, productsDdb: string) {
         this.ddbClient = ddbClient
         this.productsDdb = productsDdb
 
@@ -35,7 +36,7 @@ export class ProductRepository {
      * 
      * Operação assincrona quando executada na tabela (retorna uma promessa)
      *  operação assincorna é uma operação que funciona de forma independente do restante do código pq ela pode demorar para ser executada por inteiro
-     *  */ 
+     *  */
     async getAllProducts(): Promise<Product[]> {
         // espera a promessa ser resolvida (ser executada) para retornar o resultado
         const data = await this.ddbClient.scan({
@@ -43,7 +44,7 @@ export class ProductRepository {
         }).promise()
 
         // os itens da tabela estão dentro desse atributo Items
-            // usando a interface para definir o tipo de retorno e a conversão dos itens
+        // usando a interface para definir o tipo de retorno e a conversão dos itens
         return data.Items as Product[]
     }
 
@@ -53,7 +54,7 @@ export class ProductRepository {
      */
     async getProductById(productId: string): Promise<Product> {
         // Get --> pega um item da tabela pela sua primary key
-         // nome do campo que definimos como chave primaria, recebe o valor do parametro
+        // nome do campo que definimos como chave primaria, recebe o valor do parametro
         const data = await this.ddbClient.get({
             TableName: this.productsDdb,
             Key: {
@@ -62,9 +63,9 @@ export class ProductRepository {
         }).promise()
 
         // Verifica se o produto não foi encontrado 
-            // Item é um atributo que pode ser vazio, logo se ele não existir é porque o produto não foi encontrado
+        // Item é um atributo que pode ser vazio, logo se ele não existir é porque o produto não foi encontrado
         if (!data.Item) {
-                // O parametro é a mensagem que o erro vai retornar
+            // O parametro é a mensagem que o erro vai retornar
             throw new Error("Product not found")
         }
 
@@ -75,7 +76,7 @@ export class ProductRepository {
      * Persistindo (Criando, Salvando) um produto na tabela
      * adicionando um item do tipo da interface criada
      */
-    async create(product: Product): Promise<Product>{
+    async create(product: Product): Promise<Product> {
         // Id é gerado automaticamente
         product.id = uuid()
         await this.ddbClient.put({
@@ -95,8 +96,8 @@ export class ProductRepository {
         /** 
          * returnValues --> o que será retornado após a operação ser executada, o padrão é NONE (não retorna nada)
          *  ALL_OLD --> retorna o item antes de ser deletado  
-        */ 	
-            
+        */
+
         const data = await this.ddbClient.delete({
             TableName: this.productsDdb,
             Key: {
@@ -128,29 +129,30 @@ export class ProductRepository {
          *          set productName = :name, code = :code, price = :price --> campos que serão alterados
          *      ExpressionAttributeValues --> valores que serão passados para a atualização
          *      
-         *  */ 
+         *  */
 
         const data = await this.ddbClient.update({
-           TableName: this.productsDdb,
-           Key: {
-              id: productId
-           },
-           ConditionExpression: 'attribute_exists(id)',
-           ReturnValues: "UPDATED_NEW",
-           UpdateExpression: "set productName = :n, code = :c, price = :p, model = :m",
-           ExpressionAttributeValues: {
-              ":n": product.productName,
-              ":c": product.code,
-              ":p": product.price,
-              ":m": product.model,
-           }
+            TableName: this.productsDdb,
+            Key: {
+                id: productId
+            },
+            ConditionExpression: 'attribute_exists(id)',
+            ReturnValues: "UPDATED_NEW",
+            UpdateExpression: "set productName = :n, code = :c, price = :p, model = :m, productUrl = :u",
+            ExpressionAttributeValues: {
+                ":n": product.productName,
+                ":c": product.code,
+                ":p": product.price,
+                ":m": product.model,
+                ":u": product.productUrl,
+            }
         }).promise()
 
         // atribuindo o id do produto que foi alterado (o ! é para dizer que o atributo não é nulo)
-            // se o produto não existir ele vai lançar uma exceção
+        // se o produto não existir ele vai lançar uma exceção
         data.Attributes!.id = productId
         return data.Attributes as Product
-     }
+    }
 
 
 }
