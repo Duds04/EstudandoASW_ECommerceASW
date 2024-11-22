@@ -22,10 +22,21 @@
     "strictPropertyInitialization": false,
     "typeRoots": [
       "./node_modules/@types"
-    ]
+    ],
+    "baseUrl": "./",
+    "paths": {
+      "/opt/nodejs/productsLayer": [
+        "lambda/products/layers/productsLayer/nodejs/productRepository"
+      ]
+    },
   },
   "exclude": [
     "node_modules",
     "cdk.out"
   ]
 }
+/**
+ * Base url --> caminho basico é o diretório raiz do projeto
+ * paths --> mapeamento de caminhos para importação de módulos
+ *  "/opt/nodejs/productsLayer" --> caminho do módulo vai ter as informações contidas no caminho especificado (arquivo sem o .ts)
+ */

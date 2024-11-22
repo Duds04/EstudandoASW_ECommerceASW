@@ -9,6 +9,8 @@ import * as cdk from "aws-cdk-lib"
 
 // Biblioteca para criar tabelas no dynamoDB
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb"
+// Sistem manager (usaremos para ler o parametro do layer)
+import * as ssm from "aws-cdk-lib/aws-ssm"
 
 import { Construct } from "constructs"
 
@@ -61,6 +63,11 @@ export class ProductsAppStack extends cdk.Stack{
         })
 
 
+        //  Product Layer
+        const productsLayerArn = ssm.StringParameter.valueForStringParameter(this, "ProductsLayerVersionArn")
+        // Recriando o layer a partir de um ARN (Igual ao criado em ProductsAppLayerStack, mas agora estamos importando)
+        const productsLayer = lambda.LayerVersion.fromLayerVersionArn(this, "ProductsLayerVersionArn", productsLayerArn)
+
         // cria a função lambda (tem os mesmos parametros padrões de um construtor de stack) (scope, id e propiedades)
             // this referencia a stack onde a função está inserida 
             // id --> identificação do recurso na stack [functionName é realmente o nome da função, aparece no console AWS]
@@ -76,6 +83,7 @@ export class ProductsAppStack extends cdk.Stack{
                 aws-sdk é uma biblioteca que permite acessar recursos da AWS (como a tabela de produtos) pra isso precisamos passar
                 evorimronment variables (variaveis de ambiente) para a função lambda
                     Nome Variavel de ambinete: nome da tabela (pegando direto do componente)
+                layers: lugar onde a função pode buscar trechos de codigo
          */
         this.productsFetchHandler = new lambdaNodeJS.NodejsFunction(this, "ProductsFetchFunction", {
             runtime: lambda.Runtime.NODEJS_18_X,
@@ -91,6 +99,7 @@ export class ProductsAppStack extends cdk.Stack{
             environment: {
                 PRODUCTS_DDB: this.productsDbd.tableName,
             },
+            layers: [productsLayer],
         })
 
         // Permissão para a função lambda ler dados da tabela de produtos
@@ -102,6 +111,8 @@ export class ProductsAppStack extends cdk.Stack{
 
         /*
             Função para fazer a manipulação de produtos (criar, deletar e editar produtos)
+
+                Duas funções utilizando trechos de codigos compartilhados pelo layer
         */
         this.productsAdminHandler = new lambdaNodeJS.NodejsFunction(this, "ProductAdminFunction", {
             runtime: lambda.Runtime.NODEJS_18_X,
@@ -117,6 +128,7 @@ export class ProductsAppStack extends cdk.Stack{
             environment: {
                 PRODUCTS_DDB: this.productsDbd.tableName,
             },
+            layers: [productsLayer],
         })
         
         // Escrever informações na tabela
