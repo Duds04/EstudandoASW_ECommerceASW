@@ -4,10 +4,13 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway" // biblioteca para cria
 import * as cwlogs from "aws-cdk-lib/aws-logs" // biblioteca para criar logs no CloudWatch
 import { Construct } from "constructs"
 
+// ao atribuir um novo parametro na interface é necessário adicionar no ECommerceApiStack (ou seja declarar lá que essa stack existe)
 // interface para passar propriedades para a stack sendo criada
 interface ECommerceApiStackProps extends cdk.StackProps {
     // Da acesso a nossa classe a função lambda de retornar produtos
     productsFetchHandler: lambdaNodeJS.NodejsFunction
+    // Da acesso a nossa classe a função lambda de administração de produtos
+    productsAdminHandler: lambdaNodeJS.NodejsFunction
 }
 
 export class ECommerceApiStack extends cdk.Stack {
@@ -74,9 +77,29 @@ export class ECommerceApiStack extends cdk.Stack {
 
         // criando recurso que representa meu serviço de produtos ("/products")
         // adicionando um novo recurso na raiz ("/") da API
-        const productResource = api.root.addResource("products")
+        const productsResource = api.root.addResource("products")
+
         // Invoca ao ser chamado o recurso /products com o metodo GET a função productsFetchIntegration
-        productResource.addMethod("GET", productsFetchIntegration)
+        productsResource.addMethod("GET", productsFetchIntegration)
+
+        /* Buscando produto pelo seu id
+            endereço do recurso é /products/{id} acessado pelo metodo GET
+            adicionando um subrecurso ao recurso de "produtos" (que já tem o endereço /products definido) 
+        */
+        const productIdResource = productsResource.addResource("{id}")
+        productIdResource.addMethod("GET", productsFetchIntegration)
+
+        // criando uma integração do API Gateway com a função lambda productsAdminHandler
+        const productsAdminIntegration = new apigateway.LambdaIntegration(props.productsAdminHandler)
+
+        // Outras operacões de administração de produtos
+            // POST /products --> criar um novo produto	
+            // Dentro do recurso raiz ("/products") adiciona esse novo metodo
+        const createProductResource = productsResource.addMethod("POST", productsAdminIntegration)
+            // PUT /products/{id} --> atualizar um produto existente
+        const updateProductResource = productIdResource.addMethod("PUT", productsAdminIntegration)
+            // DELETE /products/{id} --> deletar um produto existente
+        const deletProductResorce = productIdResource.addMethod("DELETE", productsAdminIntegration) 
 
     }
 }

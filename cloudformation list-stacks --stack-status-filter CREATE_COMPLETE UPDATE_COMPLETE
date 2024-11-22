@@ -1,0 +1,35 @@
+{
+    "StackSummaries": [
+        {
+            "StackId": "arn:aws:cloudformation:us-east-1:207567781813:stack/ECommerceApiStack/d6383f10-a85d-11ef-aeb6-12774ca35e25",
+            "StackName": "ECommerceApiStack",
+            "CreationTime": "2024-11-21T23:10:45.407000+00:00",
+            "LastUpdatedTime": "2024-11-21T23:10:54.198000+00:00",
+            "StackStatus": "CREATE_COMPLETE",
+            "DriftInformation": {
+                "StackDriftStatus": "NOT_CHECKED"
+            }
+        },
+        {
+            "StackId": "arn:aws:cloudformation:us-east-1:207567781813:stack/ProductsAppStack/b668a170-a85d-11ef-9a41-0affd1b527fb",
+            "StackName": "ProductsAppStack",
+            "CreationTime": "2024-11-21T23:09:52.030000+00:00",
+            "LastUpdatedTime": "2024-11-21T23:10:00.429000+00:00",
+            "StackStatus": "CREATE_COMPLETE",
+            "DriftInformation": {
+                "StackDriftStatus": "NOT_CHECKED"
+            }
+        },
+        {
+            "StackId": "arn:aws:cloudformation:us-east-1:207567781813:stack/CDKToolkit/4d8b08d0-a02b-11ef-9789-0e0609817685",
+            "StackName": "CDKToolkit",
+            "TemplateDescription": "This stack includes resources needed to deploy AWS CDK apps into this environment",
+            "CreationTime": "2024-11-11T12:48:51.871000+00:00",
+            "LastUpdatedTime": "2024-11-11T12:48:59.297000+00:00",
+            "StackStatus": "CREATE_COMPLETE",
+            "DriftInformation": {
+                "StackDriftStatus": "NOT_CHECKED"
+            }
+        }
+    ]
+}

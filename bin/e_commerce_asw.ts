@@ -42,9 +42,11 @@ const productsAppStack = new ProductsAppStack(app, 'ProductsAppStack', {
 // Passa a Stack como parametro pelo props
 const eCommerceApiStack = new ECommerceApiStack(app, 'ECommerceApiStack', {
   productsFetchHandler: productsAppStack.productsFetchHandler,
+  productsAdminHandler: productsAppStack.productsAdminHandler,
   tags: tags,
   env: env,
 })
 
 // Deixando explicito que a stack da API depende da stack de produtos
 eCommerceApiStack.addDependency(productsAppStack)
+
