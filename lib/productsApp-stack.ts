@@ -93,8 +93,8 @@ export class ProductsAppStack extends cdk.Stack{
             memorySize: 128,
             timeout: cdk.Duration.seconds(5),
             bundling: {
-                minify: true,
-                sourceMap: false,
+                minify: false,
+                sourceMap: true,
             },
             environment: {
                 PRODUCTS_DDB: this.productsDbd.tableName,
@@ -114,7 +114,7 @@ export class ProductsAppStack extends cdk.Stack{
 
                 Duas funções utilizando trechos de codigos compartilhados pelo layer
         */
-        this.productsAdminHandler = new lambdaNodeJS.NodejsFunction(this, "ProductAdminFunction", {
+        this.productsAdminHandler = new lambdaNodeJS.NodejsFunction(this, "ProductsAdminFunction", {
             runtime: lambda.Runtime.NODEJS_18_X,
             functionName: "ProductsAdminFunction",
             entry: "lambda/products/productsAdminFunction.ts",
@@ -122,8 +122,8 @@ export class ProductsAppStack extends cdk.Stack{
             memorySize: 128,
             timeout: cdk.Duration.seconds(5),
             bundling: {
-                minify: true,
-                sourceMap: false,
+                minify: false,
+                sourceMap: true,
             },
             environment: {
                 PRODUCTS_DDB: this.productsDbd.tableName,

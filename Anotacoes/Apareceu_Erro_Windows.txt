@@ -1,0 +1,19 @@
+Encontrou esse erro no Windows:
+        cdk : O arquivo C:\Users\ViaConsulting\AppData\Roaming\npm\cdk.ps1 não pode ser
+        carregado porque a execução de scripts foi desabilitada neste sistema. Para obter mais
+        informações, consulte about_Execution_Policies em
+        https://go.microsoft.com/fwlink/?LinkID=135170.
+        No linha:1 caractere:1
+        + cdk deploy --all --require-approval never
+        + ~~~
+            + CategoryInfo          : ErrodeSegurança: (:) [], PSSecurityException
+            + FullyQualifiedErrorId : UnauthorizedAccess
+
+    Rode: 
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+
+    Isso faz:
+        A permição da execução de scripts apenas na sessão atual
+
+     Para fazer permanentemente:
+        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned

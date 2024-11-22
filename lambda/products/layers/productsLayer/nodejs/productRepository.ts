@@ -11,6 +11,7 @@ export interface Product {
     productName: string, // identificador "name" é reservado no DynamoDB
     code: string,
     price: number,
+    model: string,
 }
 
 // Criando metodos para acessar a tabela
@@ -18,12 +19,12 @@ export class ProductRepository {
     // Passar o cliente que vai ter acesso ao DynamoDB (cada instancia da função lambda tem seu cliente) (recebe por parametro)
     private ddbClient: DocumentClient
     // Nome da tabela que será acessada (recebe por parametro)
-    private productsDbd: string
+    private productsDdb: string
 
     // Params Cliente e Nome da tabela
-    constructor(ddbClient: DocumentClient, productsDbd: string){
+    constructor(ddbClient: DocumentClient, productsDdb: string){
         this.ddbClient = ddbClient
-        this.productsDbd = productsDbd
+        this.productsDdb = productsDdb
 
         // Tendo um cliente DynamoDB tenho acesso a todas as operações em cima da minha tabela
     }
@@ -38,7 +39,7 @@ export class ProductRepository {
     async getAllProducts(): Promise<Product[]> {
         // espera a promessa ser resolvida (ser executada) para retornar o resultado
         const data = await this.ddbClient.scan({
-            TableName: this.productsDbd,
+            TableName: this.productsDdb,
         }).promise()
 
         // os itens da tabela estão dentro desse atributo Items
@@ -54,7 +55,7 @@ export class ProductRepository {
         // Get --> pega um item da tabela pela sua primary key
          // nome do campo que definimos como chave primaria, recebe o valor do parametro
         const data = await this.ddbClient.get({
-            TableName: this.productsDbd,
+            TableName: this.productsDdb,
             Key: {
                 id: productId
             }
@@ -78,7 +79,7 @@ export class ProductRepository {
         // Id é gerado automaticamente
         product.id = uuid()
         await this.ddbClient.put({
-            TableName: this.productsDbd,
+            TableName: this.productsDdb,
             Item: product,
         }).promise()
 
@@ -97,7 +98,7 @@ export class ProductRepository {
         */ 	
             
         const data = await this.ddbClient.delete({
-            TableName: this.productsDbd,
+            TableName: this.productsDdb,
             Key: {
                 id: productId
             },
@@ -116,8 +117,8 @@ export class ProductRepository {
     /**
      * Atualizar (Alterar) um produto na tabela pelo seu ID
      */
-    async updateProduct(productId: string, newProduct: Product): Promise<Product> {
 
+    async updateProduct(productId: string, product: Product): Promise<Product> {
         /**
          * Id --> do produto a ser alterado
          * ConditionExpression: "attribute_exists(id)" --> só vai alterar se o ID do produto existir
@@ -128,26 +129,28 @@ export class ProductRepository {
          *      ExpressionAttributeValues --> valores que serão passados para a atualização
          *      
          *  */ 
+
         const data = await this.ddbClient.update({
-            TableName: this.productsDbd,
-            Key: {
-                id: productId
-            },
-            ConditionExpression: "attribute_exists(id)", 
-            ReturnValues: "UPDATED_NEW",
-            UpdateExpression: "set productName = :n, code = :c, price = :p, model = :m",
-            ExpressionAttributeValues: {
-                ":n": newProduct.productName,
-                ":c": newProduct.code,
-                ":p": newProduct.price
-            }
+           TableName: this.productsDdb,
+           Key: {
+              id: productId
+           },
+           ConditionExpression: 'attribute_exists(id)',
+           ReturnValues: "UPDATED_NEW",
+           UpdateExpression: "set productName = :n, code = :c, price = :p, model = :m",
+           ExpressionAttributeValues: {
+              ":n": product.productName,
+              ":c": product.code,
+              ":p": product.price,
+              ":m": product.model,
+           }
         }).promise()
 
         // atribuindo o id do produto que foi alterado (o ! é para dizer que o atributo não é nulo)
             // se o produto não existir ele vai lançar uma exceção
         data.Attributes!.id = productId
         return data.Attributes as Product
+     }
 
-    }
 
 }

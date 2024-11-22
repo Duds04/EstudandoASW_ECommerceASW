@@ -41,23 +41,18 @@ export async function handler(event: APIGatewayProxyEvent,
     // Verificando qual metodo foi acessado
     if (event.httpMethod === "PUT") {
       console.log(`PUT /products/${productId}`)
-      const newProduct = JSON.parse(event.body!) as Product
-      const productUpdated = await productRepository.updateProduct(productId, newProduct)
+      const product = JSON.parse(event.body!) as Product
       try {
-        return {
-          statusCode: 200, // o codigo de status representa que o recurso foi atualizado
-          body: JSON.stringify(productUpdated),
-        }
-      } catch (ConditionCheckFailedException) {
-        /**
-         * Captura um erro diferente
-         * ConditionCheckFailedException --> erro que ocorre quando a condição de atualização não é atendida
-         *  */ 
-        console.error('Product not found')
-        return {
-          statusCode: 404, // o codigo de status representa que o recurso não foi encontrado
-          body: 'Product not found',
+        const productUpdated = await productRepository.updateProduct(productId, product)
 
+        return {
+          statusCode: 200,
+          body: JSON.stringify(productUpdated)
+        }
+      } catch (ConditionalCheckFailedException) {
+        return {
+          statusCode: 404,
+          body: 'Product not found'
         }
       }
     } else if (event.httpMethod === "DELETE") {

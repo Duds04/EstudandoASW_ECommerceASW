@@ -95,11 +95,11 @@ export class ECommerceApiStack extends cdk.Stack {
         // Outras operacões de administração de produtos
             // POST /products --> criar um novo produto	
             // Dentro do recurso raiz ("/products") adiciona esse novo metodo
-        const createProductResource = productsResource.addMethod("POST", productsAdminIntegration)
+        productsResource.addMethod("POST", productsAdminIntegration)
             // PUT /products/{id} --> atualizar um produto existente
-        const updateProductResource = productIdResource.addMethod("PUT", productsAdminIntegration)
+        productIdResource.addMethod("PUT", productsAdminIntegration) 
             // DELETE /products/{id} --> deletar um produto existente
-        const deletProductResorce = productIdResource.addMethod("DELETE", productsAdminIntegration) 
+        productIdResource.addMethod("DELETE", productsAdminIntegration) 
 
     }
 }
