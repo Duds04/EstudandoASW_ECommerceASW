@@ -66,40 +66,60 @@ export class ECommerceApiStack extends cdk.Stack {
                     responseLength: true,
                     status: true,
                     caller: true,
-                    user: true,
-                }),
+                    user: true
+                })
             }
         })
 
-        // criando uma integração do API Gateway com a função lambda productsFetchHandler
+        // // criando uma integração do API Gateway com a função lambda productsFetchHandler
+        // const productsFetchIntegration = new apigateway.LambdaIntegration(props.productsFetchHandler)
+        // // definindo de que forma a função lambda será chamada (como ela será integrada com o API Gateway)
+
+        // // criando recurso que representa meu serviço de produtos ("/products")
+        // // adicionando um novo recurso na raiz ("/") da API
+        // const productsResource = api.root.addResource("products")
+
+        // // Invoca ao ser chamado o recurso /products com o metodo GET a função productsFetchIntegration
+        // productsResource.addMethod("GET", productsFetchIntegration)
+
+        // /* Buscando produto pelo seu id
+        //     endereço do recurso é /products/{id} acessado pelo metodo GET
+        //     adicionando um subrecurso ao recurso de "produtos" (que já tem o endereço /products definido) 
+        // */
+        // const productIdResource = productsResource.addResource("{id}")
+        // productIdResource.addMethod("GET", productsFetchIntegration)
+
+        // // criando uma integração do API Gateway com a função lambda productsAdminHandler
+        // const productsAdminIntegration = new apigateway.LambdaIntegration(props.productsAdminHandler)
+
+        // // Outras operacões de administração de produtos
+        // // POST /products --> criar um novo produto	
+        // // Dentro do recurso raiz ("/products") adiciona esse novo metodo
+        // const createProductResource = productsResource.addMethod("POST", productsAdminIntegration)
+        // // PUT /products/{id} --> atualizar um produto existente
+        // const updateProductResource = productIdResource.addMethod("PUT", productsAdminIntegration)
+        // // DELETE /products/{id} --> deletar um produto existente
+        // const deletProductResorce = productIdResource.addMethod("DELETE", productsAdminIntegration)
         const productsFetchIntegration = new apigateway.LambdaIntegration(props.productsFetchHandler)
-        // definindo de que forma a função lambda será chamada (como ela será integrada com o API Gateway)
 
-        // criando recurso que representa meu serviço de produtos ("/products")
-        // adicionando um novo recurso na raiz ("/") da API
+        // "/products"
         const productsResource = api.root.addResource("products")
-
-        // Invoca ao ser chamado o recurso /products com o metodo GET a função productsFetchIntegration
         productsResource.addMethod("GET", productsFetchIntegration)
 
-        /* Buscando produto pelo seu id
-            endereço do recurso é /products/{id} acessado pelo metodo GET
-            adicionando um subrecurso ao recurso de "produtos" (que já tem o endereço /products definido) 
-        */
+        // GET /products/{id}
         const productIdResource = productsResource.addResource("{id}")
         productIdResource.addMethod("GET", productsFetchIntegration)
 
-        // criando uma integração do API Gateway com a função lambda productsAdminHandler
         const productsAdminIntegration = new apigateway.LambdaIntegration(props.productsAdminHandler)
 
-        // Outras operacões de administração de produtos
-            // POST /products --> criar um novo produto	
-            // Dentro do recurso raiz ("/products") adiciona esse novo metodo
-        const createProductResource = productsResource.addMethod("POST", productsAdminIntegration)
-            // PUT /products/{id} --> atualizar um produto existente
-        const updateProductResource = productIdResource.addMethod("PUT", productsAdminIntegration)
-            // DELETE /products/{id} --> deletar um produto existente
-        const deletProductResorce = productIdResource.addMethod("DELETE", productsAdminIntegration) 
+        // POST /products
+        productsResource.addMethod("POST", productsAdminIntegration)
+
+        // PUT /products/{id}
+        productIdResource.addMethod("PUT", productsAdminIntegration)
+
+        // DELETE /products/{id}
+        productIdResource.addMethod("DELETE", productsAdminIntegration)
 
     }
 }

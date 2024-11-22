@@ -18,14 +18,14 @@ import { Construct } from "constructs"
     Função que gera eventos (pra ser guardado em outra tabela para ser retornado futuramente)
     Tabela de Produtos 
     Tabela de Eventos 
-*/   
-export class ProductsAppStack extends cdk.Stack{
+*/
+export class ProductsAppStack extends cdk.Stack {
     /* Representando a product fetch (pesquisa valores) --> precisa acessar essa função externamente no API 
         Handler --> significa metodo que é chamado quando é invocado a função
     */
     readonly productsFetchHandler: lambdaNodeJS.NodejsFunction
     readonly productsAdminHandler: lambdaNodeJS.NodejsFunction // Função de administração de produtos (criar, deletar e editar produtos)
-    readonly productsDbd: dynamodb.Table
+    readonly productsDdb: dynamodb.Table
 
 
     /* todo contrutor de stack deve ter esses três parametros
@@ -35,7 +35,7 @@ export class ProductsAppStack extends cdk.Stack{
         props é opcional (pois após ele tem um ?), se não for passado ele será um objeto vazio
     Funções sendo criadas dentro do construtor pois não terão seus modulos acessados fora da stack 
     */
-    constructor(scope: Construct, id: string, props?: cdk.StackProps){
+    constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props)
 
         /**
@@ -48,22 +48,21 @@ export class ProductsAppStack extends cdk.Stack{
          * writeCapacity --> capacidade de escrita da tabela (quantidade de escritas por segundo que a tabela pode fazer)
          */
 
-        this.productsDbd = new dynamodb.Table(this, "ProductsDbd", {
+        this.productsDdb = new dynamodb.Table(this, "ProductsDdb", {
             tableName: "products",
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             partitionKey: {
-                name: "id",
-                type: dynamodb.AttributeType.STRING,
+               name: "id",
+               type: dynamodb.AttributeType.STRING
             },
-            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            billingMode: dynamodb.BillingMode.PROVISIONED,
             readCapacity: 1,
-            writeCapacity: 1,
-        })
-
-
+            writeCapacity: 1
+         })
+   
         // cria a função lambda (tem os mesmos parametros padrões de um construtor de stack) (scope, id e propiedades)
-            // this referencia a stack onde a função está inserida 
-            // id --> identificação do recurso na stack [functionName é realmente o nome da função, aparece no console AWS]
+        // this referencia a stack onde a função está inserida 
+        // id --> identificação do recurso na stack [functionName é realmente o nome da função, aparece no console AWS]
         /* entry: ponto de entrada da função lambda --> arquivo que contem o metodo que será chamado quando a função for invocada
             handler: nome do metodo que será chamado quando a função for invocada (dentro do arquivo de entrada)
             Quantidade de memoria em megaBytes que posso definir para a função lambda usar para executar (default 128MB)
@@ -77,53 +76,45 @@ export class ProductsAppStack extends cdk.Stack{
                 evorimronment variables (variaveis de ambiente) para a função lambda
                     Nome Variavel de ambinete: nome da tabela (pegando direto do componente)
          */
-        this.productsFetchHandler = new lambdaNodeJS.NodejsFunction(this, "ProductsFetchFunction", {
-            runtime: lambda.Runtime.NODEJS_18_X,
+        this.productsFetchHandler = new lambdaNodeJS.NodejsFunction(this,
+            "ProductsFetchFunction", {
             functionName: "ProductsFetchFunction",
             entry: "lambda/products/productsFetchFunction.ts",
             handler: "handler",
-            memorySize: 128,
+            memorySize: 512,
             timeout: cdk.Duration.seconds(5),
             bundling: {
                 minify: true,
-                sourceMap: false,
+                sourceMap: false
             },
             environment: {
-                PRODUCTS_DDB: this.productsDbd.tableName,
+                PRODUCTS_DDB: this.productsDdb.tableName
             },
+            runtime: lambda.Runtime.NODEJS_18_X
         })
-
         // Permissão para a função lambda ler dados da tabela de produtos
-        this.productsDbd.grantReadData(this.productsFetchHandler)
-
-        // Permissão para a função lambda escrever dados na tabela de produtos
-        this.productsDbd.grantWriteData(this.productsFetchHandler)
-          
+        this.productsDdb.grantReadData(this.productsFetchHandler)
 
         /*
-            Função para fazer a manipulação de produtos (criar, deletar e editar produtos)
-        */
-        this.productsAdminHandler = new lambdaNodeJS.NodejsFunction(this, "ProductAdminFunction", {
-            runtime: lambda.Runtime.NODEJS_18_X,
+                Função para fazer a manipulação de produtos (criar, deletar e editar produtos)
+        */ 
+        this.productsAdminHandler = new lambdaNodeJS.NodejsFunction(this,
+            "ProductsAdminFunction", {
             functionName: "ProductsAdminFunction",
             entry: "lambda/products/productsAdminFunction.ts",
             handler: "handler",
-            memorySize: 128,
+            memorySize: 512,
             timeout: cdk.Duration.seconds(5),
             bundling: {
                 minify: true,
-                sourceMap: false,
+                sourceMap: false
             },
             environment: {
-                PRODUCTS_DDB: this.productsDbd.tableName,
+                PRODUCTS_DDB: this.productsDdb.tableName
             },
+            runtime: lambda.Runtime.NODEJS_18_X
         })
-        
-        // Escrever informações na tabela
-        this.productsDbd.grantWriteData(this.productsAdminHandler)
-
-        // Permissão para a função lambda ler dados da tabela de produtos
-        this.productsDbd.grantReadData(this.productsAdminHandler)
-
+        // Permissão para a função lambda escrever dados na tabela de produtos
+        this.productsDdb.grantWriteData(this.productsAdminHandler)
     }
 }

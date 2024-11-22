@@ -1,4 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { DynamoDB } from "aws-sdk"
 
 // Função de procurar produtos
 
@@ -27,7 +28,6 @@ export async function handler(
     // dentro desse corpo sempre estaremos lidando com requisições HTTP
     const method = event.httpMethod
 
-
     // recebe a função rest com metodo HTTP
     // event.resource --> onde o recurso foi solicitado (endereço products)
     if (event.resource === "/products") {
@@ -46,24 +46,33 @@ export async function handler(
             }
 
         }
-    } else if (event.resource === "/products/{id}") { 
-        // "!" --> indica que o valor não é nulo (não é undefined)
+    } else if (event.resource === "/products/{id}") {
         const productId = event.pathParameters!.id as string
         console.log(`GET /products/${productId}`)
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                message: `GET /products/${productId}`,
+  
+        try {
+           return {
+              statusCode: 200,
+              body: JSON.stringify({
+                message: `GET /products/${productId}`
             })
+           }   
+        } catch (error) {
+           console.error((<Error>error).message)
+           return {
+              statusCode: 404,
+              body: (<Error>error).message
+           }
         }
-    }
+     }
+  
+     return {
+        statusCode: 400,
+        body: JSON.stringify({
+           message: "Bad request"
+        })
+     }
 
     // caso não seja um GET ou não seja o endereço products retorna:
     // statusCode: 400 --> codigo HTTP que indica que a requisição foi mal feita (não tem significado)
-    return {
-        statusCode: 400,
-        body: JSON.stringify({
-            message: "Bad Request",
-        })
-    }
 }
