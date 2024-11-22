@@ -125,7 +125,5 @@ export class ProductsAppStack extends cdk.Stack{
         // Permissão para a função lambda ler dados da tabela de produtos
         this.productsDbd.grantReadData(this.productsAdminHandler)
 
-        // Permissão para a função lambda escrever dados na tabela de produtos
-        this.productsDbd.grantWriteData(this.productsAdminHandler)
     }
 }
