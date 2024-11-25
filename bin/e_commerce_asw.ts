@@ -4,6 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import { ProductsAppStack } from '../lib/productsApp-stack';
 import { ECommerceApiStack } from '../lib/ecommerceApi-stack';
 import { ProductsAppLayerStack } from '../lib/productsAppLayers-stack';
+import { EventsDdbStack } from '../lib/eventsDdb-stack'
 
 // Representa o back-end de um Ecommerce ficticio
 // Ponto de entrada da aplicação (Primeira coisa a ser executada)
@@ -24,7 +25,7 @@ const env: cdk.Environment = {
 }
 
 // Colocando tags que identificam o recurso criado (pra fazer controle de custo)
-  // Centro de curso é o projeto ECommerce
+// Centro de curso é o projeto ECommerce
 const tags = {
   cost: "ECommerce",
   team: "Maria Eduarda",
@@ -40,23 +41,29 @@ const tags = {
  *    isso porque assim podemos fazer alterações na stack layer sem precisar alterar as stacks de produtos (sem afetar as funções lambdas)
  * 
  */
-const productsAppLayerStack = new ProductsAppLayerStack(app,'ProductsAppLayerStack', {
+const productsAppLayerStack = new ProductsAppLayerStack(app, 'ProductsAppLayerStack', {
   tags: tags,
   env: env,
 })
 
+const eventsDdbStack = new EventsDdbStack(app,
+  'EventsDdb', {
+  tags: tags,
+  env: env,
+})
 
 /* variavem que instancia a stack da função de retornar produtos
 inserida dentro do escopo app
   definindo propriedades da stack (tags e ambiente)
 */
 const productsAppStack = new ProductsAppStack(app, 'ProductsAppStack', {
+  eventsDdb: eventsDdbStack.table,
   tags: tags,
   env: env,
 })
 
 // Definir que a stack de layer seja executada antes das demais stacks
-  // Stack de produtos depende indiretamente da stack de layer, dependencia fraca
+// Stack de produtos depende indiretamente da stack de layer, dependencia fraca
 productsAppStack.addDependency(productsAppLayerStack)
 
 // Passa a Stack como parametro pelo props

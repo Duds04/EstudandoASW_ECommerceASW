@@ -1,12 +1,18 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { Product, ProductRepository } from "/opt/nodejs/productsLayer";
-import { DynamoDB } from "aws-sdk";
+import { DynamoDB, Lambda } from "aws-sdk";
+import { ProductEvent, ProductEventType } from "/opt/nodejs/productEventsLayer"
 import * as AWSXRay from "aws-xray-sdk";
 
 AWSXRay.captureAWS(require('aws-sdk'))
 
 const productsDbd = process.env.PRODUCTS_DDB!
 const ddbClient = new DynamoDB.DocumentClient()
+
+// Nome da função lambda que será invocada
+const productEventsFunctionName = process.env.PRODUCTS_EVENTS_FUNCTION_NAME!
+// cliente para chamar outras funções lambda
+const lambdaClient = new Lambda()
 
 const productRepository = new ProductRepository(ddbClient, productsDbd)
 
@@ -33,6 +39,12 @@ export async function handler(event: APIGatewayProxyEvent,
     const product = JSON.parse(event.body!) as Product
     // produto criado no banco de dados
     const productCreated = await productRepository.create(product)
+
+    // Podemos fazer a captura do retorno da função definido no callback se a invocação for sincrona
+    const response = await sendProductEvent(productCreated, ProductEventType.CREATED, "emailqualquer@gmail.com", lambdaRequestID)
+    // Resposta da função lambda que foi invocada
+    console.log(response)
+
     return {
       statusCode: 201, // o codigo de status representa que o recurso foi criado
       body: JSON.stringify(productCreated), // converte de string para JSON
@@ -46,7 +58,11 @@ export async function handler(event: APIGatewayProxyEvent,
       console.log(`PUT /products/${productId}`)
       const product = JSON.parse(event.body!) as Product
       try {
+       
         const productUpdated = await productRepository.updateProduct(productId, product)
+
+        const response = await sendProductEvent(productUpdated, ProductEventType.UPDATED, "emailqualquerSegundo@gmail.com", lambdaRequestID)
+        console.log(response)
 
         return {
           statusCode: 200,
@@ -63,6 +79,10 @@ export async function handler(event: APIGatewayProxyEvent,
 
       try {
         const productDeleted = await productRepository.deleteProduct(productId)
+
+        const response = await sendProductEvent(productDeleted, ProductEventType.DELETED, "emailqualquerTerceiro@gmail.com", lambdaRequestID)
+        console.log(response)
+
         return {
           statusCode: 200, // o codigo de status representa que o recurso foi deletado com sucesso
           body: JSON.stringify(productDeleted),
@@ -82,3 +102,39 @@ export async function handler(event: APIGatewayProxyEvent,
     body: "Bad Request",
   }
 }
+
+
+/**
+ * Parametros:
+ *  Produto que foi alterado
+ */
+function sendProductEvent(product: Product,
+  eventType: ProductEventType,
+  email: string, lambdaRequestID: string) {
+
+  // Inteface ajuda a comunicação entre elementos
+  const event: ProductEvent = {
+    requestId: lambdaRequestID,
+    eventType: eventType,
+    productId: product.id,
+    productCode: product.code,
+    productPrice: product.price,
+    email: email,
+  }
+
+  /**
+   * Invocando outra função lambda (função de eventos)
+   * Payload --> corpo da requisição [Informação que será passada para a função lambda] 
+   *  event --> informação que é capturada na função handler
+   * 
+   * InvocationType --> Tipo de invocação da função lambda
+   *    - RequestResponse --> Sincrona [Aguarda a resposta da função lambda, Aguardar até que a função escreva na tabela do DynamoDB]
+   *    - Event --> Assincrona
+   *  */
+  lambdaClient.invoke({
+    FunctionName: productEventsFunctionName,
+    Payload: JSON.stringify(event),
+    InvocationType: "RequestResponse"
+  }).promise()
+}
+

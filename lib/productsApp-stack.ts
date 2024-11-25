@@ -14,14 +14,19 @@ import * as ssm from "aws-cdk-lib/aws-ssm"
 
 import { Construct } from "constructs"
 
+interface ProductsAppStackProps extends cdk.StackProps {
+    // Tabela onde os eventos serão armazenados
+    eventsDdb: dynamodb.Table
+}
+
 /* Representara uma Stack que irá conter os recursos de:
     Função de administração de produtos
     Função de exibição, pesquisa, do produtos 
     Função que gera eventos (pra ser guardado em outra tabela para ser retornado futuramente)
     Tabela de Produtos 
     Tabela de Eventos 
-*/   
-export class ProductsAppStack extends cdk.Stack{
+*/
+export class ProductsAppStack extends cdk.Stack {
     /* Representando a product fetch (pesquisa valores) --> precisa acessar essa função externamente no API 
         Handler --> significa metodo que é chamado quando é invocado a função
     */
@@ -37,7 +42,7 @@ export class ProductsAppStack extends cdk.Stack{
         props é opcional (pois após ele tem um ?), se não for passado ele será um objeto vazio
     Funções sendo criadas dentro do construtor pois não terão seus modulos acessados fora da stack 
     */
-    constructor(scope: Construct, id: string, props?: cdk.StackProps){
+    constructor(scope: Construct, id: string, props: ProductsAppStackProps) {
         super(scope, id, props)
 
         /**
@@ -62,15 +67,46 @@ export class ProductsAppStack extends cdk.Stack{
             writeCapacity: 1,
         })
 
+        //Chamando os Layers que usaremos
 
         //  Product Layer
         const productsLayerArn = ssm.StringParameter.valueForStringParameter(this, "ProductsLayerVersionArn")
         // Recriando o layer a partir de um ARN (Igual ao criado em ProductsAppLayerStack, mas agora estamos importando)
         const productsLayer = lambda.LayerVersion.fromLayerVersionArn(this, "ProductsLayerVersionArn", productsLayerArn)
 
+        const productEventsLayerArn = ssm.StringParameter.valueForStringParameter(this, "ProductEventsLayerVersionArn")
+        // Recriando o layer a partir de um ARN (Igual ao criado em ProductsAppLayerStack, mas agora estamos importando)
+        const productEventsLayer = lambda.LayerVersion.fromLayerVersionArn(this, "ProductEventsLayerVersionArn", productEventsLayerArn)
+
+
+
+
+        // Nenhuma outra stack fara referencia a essa tabela, logo não precisa ser um atributo de classe
+        const productsEventsHandler = new lambdaNodeJS.NodejsFunction(this, "ProductsEventsFunction", {
+            runtime: lambda.Runtime.NODEJS_18_X,
+            functionName: "ProductsEventsFunction",
+            entry: "lambda/products/productEventsFunction.ts",
+            handler: "handler",
+            memorySize: 128,
+            timeout: cdk.Duration.seconds(2),
+            bundling: {
+                minify: false,
+                sourceMap: true,
+            },
+            environment: {
+                EVENTS_DDB: props.eventsDdb.tableName,
+            },
+            layers: [productEventsLayer],
+            tracing: lambda.Tracing.ACTIVE,
+            insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+        })
+        // Permitir gravar os eventos de produtos
+        props.eventsDdb.grantWriteData(productsEventsHandler)
+
+
         // cria a função lambda (tem os mesmos parametros padrões de um construtor de stack) (scope, id e propiedades)
-            // this referencia a stack onde a função está inserida 
-            // id --> identificação do recurso na stack [functionName é realmente o nome da função, aparece no console AWS]
+        // this referencia a stack onde a função está inserida 
+        // id --> identificação do recurso na stack [functionName é realmente o nome da função, aparece no console AWS]
         /* entry: ponto de entrada da função lambda --> arquivo que contem o metodo que será chamado quando a função for invocada
             handler: nome do metodo que será chamado quando a função for invocada (dentro do arquivo de entrada)
             Quantidade de memoria em megaBytes que posso definir para a função lambda usar para executar (default 128MB)
@@ -79,12 +115,13 @@ export class ProductsAppStack extends cdk.Stack{
                 minify: converter o codigo para deixa-lo o mais enxuto (pequeno possivel)
                 sourceMap: mapeamento do codigo fonte (para debugar o codigo) [o sourceMap desligado pode deixar a func ainda menor
 
-                função precisa conhecer o nome da tabela sendo acessada
-                aws-sdk é uma biblioteca que permite acessar recursos da AWS (como a tabela de produtos) pra isso precisamos passar
-                evorimronment variables (variaveis de ambiente) para a função lambda
-                    Nome Variavel de ambinete: nome da tabela (pegando direto do componente)
-                layers: lugar onde a função pode buscar trechos de codigo
-                tracing: habilita o tracing (rastreamento) da função lambda (para saber o que acontece dentro da função) [pequeno impacto de custo]
+            função precisa conhecer o nome da tabela sendo acessada
+            aws-sdk é uma biblioteca que permite acessar recursos da AWS (como a tabela de produtos) pra isso precisamos passar
+            evorimronment variables (variaveis de ambiente) para a função lambda
+                Nome Variavel de ambinete: nome da tabela (pegando direto do componente)
+            layers: lugar onde a função pode buscar trechos de codigo
+            tracing: habilita o tracing (rastreamento) da função lambda (para saber o que acontece dentro da função) [pequeno impacto de custo]
+            insightsVersion: versão do lambda insights (para monitorar a função lambda) [pequeno impacto de custo] [clound watch console lambda insights]
          */
         this.productsFetchHandler = new lambdaNodeJS.NodejsFunction(this, "ProductsFetchFunction", {
             runtime: lambda.Runtime.NODEJS_18_X,
@@ -102,6 +139,7 @@ export class ProductsAppStack extends cdk.Stack{
             },
             layers: [productsLayer],
             tracing: lambda.Tracing.ACTIVE,
+            insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
         })
 
         // Permissão para a função lambda ler dados da tabela de produtos
@@ -111,6 +149,9 @@ export class ProductsAppStack extends cdk.Stack{
             Função para fazer a manipulação de produtos (criar, deletar e editar produtos)
 
                 Duas funções utilizando trechos de codigos compartilhados pelo layer
+
+
+            Dizer que dentro dessa fução invocaremos a função de eventos de produtos (atraves do sdk) --> passando como variaveis de ambiente (para garantir que sempre estará atualizado)
         */
         this.productsAdminHandler = new lambdaNodeJS.NodejsFunction(this, "ProductsAdminFunction", {
             runtime: lambda.Runtime.NODEJS_18_X,
@@ -125,12 +166,17 @@ export class ProductsAppStack extends cdk.Stack{
             },
             environment: {
                 PRODUCTS_DDB: this.productsDbd.tableName,
+                PRODUCTS_EVENTS_FUNCTION_NAME: productsEventsHandler.functionName,
             },
-            layers: [productsLayer],
+            layers: [productsLayer, productEventsLayer],
             tracing: lambda.Tracing.ACTIVE,
+            insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
         })
-        
+
         // Escrever informações na tabela
         this.productsDbd.grantWriteData(this.productsAdminHandler)
+
+        // Função de eventos de produtos de está permitindo que a função de administração de produtos invoque ela
+        productsEventsHandler.grantInvoke(this.productsAdminHandler)
     }
 }
