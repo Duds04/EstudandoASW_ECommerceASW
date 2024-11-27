@@ -73,6 +73,45 @@ export class ProductRepository {
     }
 
     /**
+     * Acessar varios produtos em uma unica vez
+     * 
+     * Parametro: lista de ids dos produtos
+     */
+    async getProductsByIds(productIds: string[]): Promise<Product[]> {
+        /** Lista de chaves que quero buscar
+         * 
+         * Atributo do tipo lista de Ids (que é são strings)
+         * Inicializando a lista
+         */
+        const keys: { id: string }[] = []
+
+        // Para cada id de produto passado como parametro, adiciono ele na lista de chaves
+            // Conversão é necessária pois o atributo keys precisa ter o mesmo nome da chave primaria da tabela que quero pesquisar
+        productIds.forEach(productId => {
+            keys.push({ id: productId })
+        })
+
+        /** Busca varios itens da tabela de uma vez (em uma só requisição)
+         * 
+         *      RequestItems --> é um objeto que contem o nome da tabela e as chaves que quero buscar
+         * 
+         *  Com o comando batch eu poderia pesquisar em mais de uma tabela ao mesmo tempo
+         * 
+         */
+        const data = await this.ddbClient.batchGet({
+            RequestItems: {
+                [this.productsDdb]: {
+                    Keys: keys
+                }
+            }
+        }).promise()
+
+        // Response pode ou não vir, passa o nome da tabela que quero buscar as respostas e converter pra uma lista de products
+        return data.Responses![this.productsDdb] as Product[]
+    }
+
+
+    /**
      * Persistindo (Criando, Salvando) um produto na tabela
      * adicionando um item do tipo da interface criada
      */

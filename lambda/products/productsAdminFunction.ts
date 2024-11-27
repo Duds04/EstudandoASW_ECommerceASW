@@ -128,13 +128,13 @@ function sendProductEvent(product: Product,
    *  event --> informação que é capturada na função handler
    * 
    * InvocationType --> Tipo de invocação da função lambda
-   *    - RequestResponse --> Sincrona [Aguarda a resposta da função lambda, Aguardar até que a função escreva na tabela do DynamoDB]
-   *    - Event --> Assincrona
+w   *    - RequestResponse --> Sincrona [Aguarda a resposta da função lambda, Aguardar até que a função escreva na tabela do DynamoDB] (tem como vantagem termos acesso ao retorno da função)
+   *    - Event --> Assincrona (tem como vantagem a função demorar menos para poder ser finalizada)
    *  */
   lambdaClient.invoke({
     FunctionName: productEventsFunctionName,
     Payload: JSON.stringify(event),
-    InvocationType: "RequestResponse"
+    InvocationType: "Event"
   }).promise()
 }
 

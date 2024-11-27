@@ -17,3 +17,11 @@ Encontrou esse erro no Windows:
 
      Para fazer permanentemente:
         Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+
+
+Erro **ProductsEventsFunction "Uploaded file must be a non-empty zip (Service: Lambda, Status Code: 400,..."
+    Rode: 
+        Remove-Item -Recurse -Force .\cdk.out
+        cdk synth
+        cdk deploy --all --require-approval never
