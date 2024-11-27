@@ -22,6 +22,6 @@ Encontrou esse erro no Windows:
 
 Erro **ProductsEventsFunction "Uploaded file must be a non-empty zip (Service: Lambda, Status Code: 400,..."
     Rode: 
-        Remove-Item -Recurse -Force .\cdk.out
-        cdk synth
+        Remove-Item -Path "C:\Users\ViaConsulting\Documents\Estágio\Estudos\AWS\Projeto\ECommerceASW\cdk.out" -Recurse -Force
+        cdk synth --no-staging
         cdk deploy --all --require-approval never

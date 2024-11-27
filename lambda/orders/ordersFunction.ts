@@ -130,7 +130,7 @@ function convertToOrderResponse (order: Order): OrderResponse {
 
    return orderResponse
 }
-// 
+
 function buildOrder(orderRequest: OrderRequest, products: Product[]): Order {
    const orderProducts: OrderProductResponse[] = []
    let totalPrice = 0

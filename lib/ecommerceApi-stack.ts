@@ -72,7 +72,7 @@ export class ECommerceApiStack extends cdk.Stack {
             }
         })
 
-        this.createProductsService(props, api) 
+        this.createProductsService(props, api)
         // passando o mesmo apiGateway para a funç de pedidos
         this.createOrdersService(props, api)
     }
@@ -81,7 +81,7 @@ export class ECommerceApiStack extends cdk.Stack {
 
         // criando uma integração do API Gateway com a função lambda productsFetchHandler
         const productsFetchIntegration = new apigateway.LambdaIntegration(props.productsFetchHandler)
-       
+
         // definindo de que forma a função lambda será chamada (como ela será integrada com o API Gateway)
         // criando recurso que representa meu serviço de produtos ("/products")
         // adicionando um novo recurso na raiz ("/") da API
@@ -98,22 +98,76 @@ export class ECommerceApiStack extends cdk.Stack {
         // criando uma integração do API Gateway com a função lambda productsAdminHandler
         const productsAdminIntegration = new apigateway.LambdaIntegration(props.productsAdminHandler)
 
+        /**
+         * Devem ter seus tipos definidos no modelo os atributos:
+         *     productName - code  - model - productUrl (todos do tipo string)
+         *          - price (tipo Number)
+         * 
+         * Atributos obrigatórios:
+         *      productName - code 
+         */
+
+        const productRequestValidator = new apigateway.RequestValidator(this, "ProductRequestValidator", {
+            restApi: api, // API atual
+            requestValidatorName: "ProductRequestValidator",
+            validateRequestBody: true,
+        })
+
+        const productModel = new apigateway.Model(this, "ProductModel", {
+            modelName: "ProductModel",
+            restApi: api,
+            schema: {
+                type: apigateway.JsonSchemaType.OBJECT, // Objeto JSON
+                properties: {
+                    productName: {
+                        type: apigateway.JsonSchemaType.STRING
+                    }, 
+                    code: {
+                        type: apigateway.JsonSchemaType.STRING
+                    },
+                    model: {
+                        type: apigateway.JsonSchemaType.STRING
+                    },
+                    productUrl: {
+                        type: apigateway.JsonSchemaType.STRING
+                    },
+                    price: {
+                        type: apigateway.JsonSchemaType.NUMBER
+                    }
+                },
+                required: [
+                    "productName",
+                    "code"
+                ], // Define os campos obrigatórios a serem passados
+            }
+        })
+
         // Outras operacões de administração de produtos
         // POST /products --> criar um novo produto	
         // Dentro do recurso raiz ("/products") adiciona esse novo metodo
-        productsResource.addMethod("POST", productsAdminIntegration)
+        productsResource.addMethod("POST", productsAdminIntegration, {
+            requestValidator: productRequestValidator,
+            requestModels: {
+                "application/json": productModel, 
+            }
+        })
         // PUT /products/{id} --> atualizar um produto existente
-        productIdResource.addMethod("PUT", productsAdminIntegration)
+        productIdResource.addMethod("PUT", productsAdminIntegration, {
+            requestValidator: productRequestValidator,
+            requestModels: {
+                "application/json": productModel, 
+            }
+        })
         // DELETE /products/{id} --> deletar um produto existente
         productIdResource.addMethod("DELETE", productsAdminIntegration)
     }
 
-    private createOrdersService(props: ECommerceApiStackProps, api: apigateway.RestApi) {
+private createOrdersService(props: ECommerceApiStackProps, api: apigateway.RestApi) {
         // criando uma integração do API Gateway com a função lambda ordersHandler
         const ordersIntegration = new apigateway.LambdaIntegration(props.ordersHandler)
 
         // recurso (/orders)
-            // cria na raiz do nosso apiGateway esse recurso 
+        // cria na raiz do nosso apiGateway esse recurso 
         const ordersResource = api.root.addResource("orders")
 
         /**
@@ -123,14 +177,14 @@ export class ECommerceApiStack extends cdk.Stack {
          *      --> buscar um pedido pelo email do cliente
          *      pegando parametros com queryString
          * 
-         * * GET /orders?email=exemplo@gmail.com&orderID=123
+         * * GET /orders?email=exemplo@gmail.com&orderId=123
          *      --> buscar um pedido pelo email do cliente e pelo id do pedido
          *      pegando parametros com queryString
          * 
          * 
          * 
          * ! Nesse caso como é o mesmo tipo de requisição HTTP podemos tratar com um unico metodo
-         *  */ 
+         *  */
         ordersResource.addMethod("GET", ordersIntegration)
 
 
@@ -149,28 +203,74 @@ export class ECommerceApiStack extends cdk.Stack {
             requestValidatorName: "OrdersDeletionValidator",
             validateRequestParameters: true,
         })
-        
+
         /**
-         * * DELETE /orders?email=exemplo@gmail.com&orderID=123
+         * * DELETE /orders?email=exemplo@gmail.com&orderId=123
          *   
          *       Definindo validação para que só invoque o metodo se passarmos os parametros corretos (evitar invocações desnecessárias, reduz custos) 
          * 
          *        --> requestParameters (define quais são os parametros, de onde eles vem e se  são obrigatórios para invocar o metodo)
          *             'method.request.querystring.email': true, (definindo o parametro email como obrigatório)
-         *              'method.request.querystring.orderID': true, (definindo o parametro orderID como obrigatório)
+         *              'method.request.querystring.orderId': true, (definindo o parametro orderId como obrigatório)
          * 
          *       --> requestValidator (validador que será usado para validar a requisição)
-         *  */ 
+         *  */
         ordersResource.addMethod("DELETE", ordersIntegration, {
             requestParameters: {
                 'method.request.querystring.email': true,
-                'method.request.querystring.orderID': true,
+                'method.request.querystring.orderId': true,
             },
             requestValidator: ordersDeletionValidator,
         })
-        
-        // * POST /orders --> criar um novo pedido
-        ordersResource.addMethod("POST", ordersIntegration)
+
+        // Criando um validador para garantir que a pk (email) será passada no corpo da requisição, evitando chamadas desnecessárias
+        const orderRequestValidator = new apigateway.RequestValidator(this, "OrderRequestValidator", {
+            restApi: api, // API atual
+            requestValidatorName: "OrderRequestValidator",
+            validateRequestBody: true, // validar o corpo da requisição
+        })
+
+        const orderModel = new apigateway.Model(this, "OrderModel", {
+            modelName: "OrderModel",
+            restApi: api,
+            // Formato que meu modelo da minha requisição deve ter
+            schema: {
+                type: apigateway.JsonSchemaType.OBJECT, // Objeto JSON
+                properties: {
+                    email: {
+                        type: apigateway.JsonSchemaType.STRING
+                    }, // Propriedade email do tipo string
+                    productIds: {
+                        type: apigateway.JsonSchemaType.ARRAY, // Tipo lista
+                        minItems: 1, // Deve ter pelo menos 1 item (não pode ser uma lista vazia)
+                        items: {
+                            type: apigateway.JsonSchemaType.STRING, // Cada item da lista é uma string
+                        } // Definindo o formato do meus itens da lista de strings
+                    },
+                    payment: {
+                        type: apigateway.JsonSchemaType.STRING, // String
+                        enum: ["CREDIT_CARD", "DEBIT_CARD", "CASH"], // Valores permitidos para o campo 
+                    },
+                },
+                required: [
+                    "email",
+                    "productIds",
+                    "payment"
+                ], // Define os campos obrigatórios a serem passados
+            }
+        })
+
+        /**
+         * * POST /orders --> criar um novo pedido
+         * 
+         * requestModels --> Onde irei ensinar o API Gateway a interpretar o corpo da requisição e definir qual formato quero que tenha la dentro
+         */
+        ordersResource.addMethod("POST", ordersIntegration, {
+            requestValidator: orderRequestValidator,
+            requestModels: {
+                "application/json": orderModel, // Definindo que quando vier uma requisição (do tipo que usamos) aplicar o modelo orderModel
+            }
+        })
 
     }
 

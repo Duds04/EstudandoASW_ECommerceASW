@@ -16,7 +16,7 @@ export enum ShippingType {
 // Valores possiveis de transportadoras
 export enum CarrierType {
     CORREIOS = "CORREIOS",
-    FEDEX = "FEDEX",
+    FEDEX = "FEDEX"
 }
 
 // Modelo de Lista de produtos
@@ -32,7 +32,7 @@ export interface OrderRequest {
     payment: PaymentType,
     shipping: {
         type: ShippingType,
-        carrier: CarrierType,
+        carrier: CarrierType
     }
 }
 
@@ -45,11 +45,11 @@ export interface OrderResponse {
     // Infos sobre o pagamento
     billing: {
         totalPrice: number,
-        payment: PaymentType,
+        payment: PaymentType
     },
     shipping: {
         type: ShippingType,
-        carrier: CarrierType,
+        carrier: CarrierType
     },
     products: OrderProductResponse[]
 }
