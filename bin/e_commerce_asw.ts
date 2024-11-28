@@ -81,6 +81,7 @@ const ordersAppStack = new OrdersAppStack(app, 'OrdersAppStack', {
   tags: tags,
   env: env,
   productsDdb: productsAppStack.productsDbd,
+  eventsDdb: eventsDdbStack.table // Atributo na interface
 })
 
 // definindo a dependencia da stack de pedidos com a stack de produtos
@@ -105,4 +106,7 @@ const eCommerceApiStack = new ECommerceApiStack(app, 'ECommerceApiStack', {
 eCommerceApiStack.addDependency(productsAppStack)
 
 eCommerceApiStack.addDependency(ordersAppStack)
+
+// Stack de pedidos depende da tabela de eventos
+eCommerceApiStack.addDependency(eventsDdbStack)
 
