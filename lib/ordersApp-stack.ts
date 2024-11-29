@@ -149,7 +149,7 @@ export class OrdersAppStack extends cdk.Stack {
                 sourceMap: true,
             },
             environment: {
-                EVENTS_DDB: props.eventsDdb.tableName,  // Acessando a tabela de eventos
+                ORDER_EVENTS_DDB: props.eventsDdb.tableName,  // Acessando a tabela de eventos
             },
             layers: [orderEventsLayer, orderEventsRepositoryLayer], // Só precisa do layer de eventos
             tracing: lambda.Tracing.ACTIVE,
