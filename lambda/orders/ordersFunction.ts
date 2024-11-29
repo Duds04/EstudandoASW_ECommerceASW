@@ -5,6 +5,7 @@ import * as AWSXRay from "aws-xray-sdk"
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda"
 import { CarrierType, OrderProductResponse, OrderRequest, OrderResponse, PaymentType, ShippingType } from "/opt/nodejs/ordersApiLayer"
 import { OrderEvent, OrderEventType, Evelope } from "/opt/nodejs/orderEventsLayer"
+import { v4 as uuid } from "uuid"
 
 AWSXRay.captureAWS(require("aws-sdk"))
 
@@ -67,24 +68,41 @@ export async function handler(event: APIGatewayProxyEvent, context: Context):
       }
    } else if (method === 'POST') {
       console.log('POST /orders')
+      
       const orderRequest = JSON.parse(event.body!) as OrderRequest
       const products = await productRepository.getProductsByIds(orderRequest.productIds)
+      
       if (products.length === orderRequest.productIds.length) {
+
          const order = buildOrder(orderRequest, products)
-         const orderCreated = await orderRepository.createOrder(order)
+         const orderCreatedPromisse =  orderRepository.createOrder(order)
 
          /** Publicar evento de criação de pedido
           * 
           *    Retorna uma promisse precisa aguardar que ela seja resolvida
           * 
           * Retorno pode ser usado para rastrear a criação do evento
+          * 
+          * 
+          * Tirando o await da frente da chamada da função, a execução do código não espera a execução da função (logo duas operações assincronas podem ser feitas em paralelo)
           */
-         const eventResult = await sendOrderEvent(orderCreated, OrderEventType.CREATED, lambdaRequestId)
-         console.log(`Order created event published - OrderId ${orderCreated.sk} - MessageId ${eventResult.MessageId}`)
+         const eventResultPromisse = sendOrderEvent(order, OrderEventType.CREATED, lambdaRequestId)
+
+
+         /**
+          *  Aguarda a execução de todas a s promisses passasdas na lista para prosseguir a execução  
+          * 
+          *  Results guarda o retorno das duas operações assincronas como um vetor
+          *    indice 0: retorno da criação do pedido (orderCreatedPromisse)
+          *    indice 1: retorno da publicação do evento (eventResultPromisse)
+          * 
+          * */ 
+         const results = await Promise.all([orderCreatedPromisse, eventResultPromisse])
+         console.log(`Order created event published - OrderId ${order.sk} - MessageId ${results[1].MessageId}`) 
 
          return {
             statusCode: 201,
-            body: JSON.stringify(convertToOrderResponse(orderCreated))
+            body: JSON.stringify(convertToOrderResponse(order))
          }
       } else {
          return {
@@ -200,8 +218,12 @@ function buildOrder(orderRequest: OrderRequest, products: Product[]): Order {
          price: product.price
       })
    })
+
+
    const order: Order = {
       pk: orderRequest.email,
+      sk: uuid(),
+      createdAt: Date.now(),
       billing: {
          payment: orderRequest.payment,
          totalPrice: totalPrice
@@ -212,5 +234,6 @@ function buildOrder(orderRequest: OrderRequest, products: Product[]): Order {
       },
       products: orderProducts
    }
+
    return order
 }

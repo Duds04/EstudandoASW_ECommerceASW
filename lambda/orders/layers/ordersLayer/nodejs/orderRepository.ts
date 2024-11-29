@@ -1,6 +1,4 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb"
-// gerar um numero aleatorio para identificação unica do pedido
-import { v4 as uuid } from "uuid"
 
 // Criando uma interface que representa o produto guardado dentro do pedido
 export interface OrderProduct {
@@ -10,11 +8,11 @@ export interface OrderProduct {
 
 // Criando uma interface que representa o pedido
 export interface Order {
-    pk: string,
+    pk: string, 
     // valor desse campo definido dentro do repositorio
     // não precisa passar como parametro
-    sk?: string,
-    createdAt?: number,
+    sk: string,
+    createdAt: number,
     shipping: {
         type: "URGENT" | "ECONOMIC", // define dois tipos de envios
         carrier: "CORREIOS" | "FEDEX",
@@ -40,18 +38,22 @@ export class OrderRepository {
     // Operação para criar um pedido
     async createOrder(order: Order): Promise<Order> {
 
-        // Os demais atributos são passados como parametro
-
-        order.sk = uuid() // gerando um id unico para o pedido
-        order.createdAt = Date.now()
+        /**
+         * Para que o pedido e o evento SNS possam executar em paralelo a
+         *  criação de alguns atributos que antes eram feitos aqui no repositorio
+         *  serão agoras feitos anteriormente e passados como parametro
+         * 
+         * Sumirá as seguintes criações internas:
+         *   order.sk = uuid() 
+         *   order.createdAt = Date.now()
+         * */ 
+        
 
         // Criando um item na tabela de pedidos
         await this.ddbClient.put({
             TableName: this.ordersDdb,
             Item: order,
         }).promise()
-
-
         
         return order
     }
