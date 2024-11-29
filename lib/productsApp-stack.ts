@@ -14,6 +14,9 @@ import * as ssm from "aws-cdk-lib/aws-ssm"
 
 import { Construct } from "constructs"
 
+import * as iam from "aws-cdk-lib/aws-iam"
+
+
 interface ProductsAppStackProps extends cdk.StackProps {
     // Tabela onde os eventos serão armazenados
     eventsDdb: dynamodb.Table
@@ -178,5 +181,23 @@ export class ProductsAppStack extends cdk.Stack {
 
         // Função de eventos de produtos de está permitindo que a função de administração de produtos invoque ela
         productsEventsHandler.grantInvoke(this.productsAdminHandler)
+       
+        const eventsDdbPolicy = new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW, // Queremos permitir ou negar o acesso?
+            actions: ["dynamodb:PutItem"], // Qual(is) é(são) a(s) ação(ões) que queremos permitir ou negar? (pode ser uma lista de açoes)
+            resources: [props.eventsDdb.tableArn], // Qual(is) é(são) o(s) recurso(s) [tabelas, stacks, etc..] que queremos permitir ou negar o acesso? (pode ser uma lista de recursos)
+            conditions: {
+                ['ForAllValues:StringLike']: {
+                    'dynamodb:LeadingKeys': ['#product_*']
+                } 
+            } 
+        })
+
+        /**
+         * Adicionando a politica de acesso a função de eventos para que ela possa escrever na tabela de eventos
+         * 
+         */
+        productsEventsHandler.addToRolePolicy(eventsDdbPolicy)
+    
     }
 }
