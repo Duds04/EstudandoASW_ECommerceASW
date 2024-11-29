@@ -174,7 +174,7 @@ export class OrdersAppStack extends cdk.Stack {
             resources: [props.eventsDdb.tableArn], // Qual(is) é(são) o(s) recurso(s) [tabelas, stacks, etc..] que queremos permitir ou negar o acesso? (pode ser uma lista de recursos)
             conditions: {
                 ['ForAllValues:StringLike']: {
-                    'dynamodb:LeadingKeys': ['"#order_*'] // have que define a entidade comece com "#order_"
+                    'dynamodb:LeadingKeys': ['#order_*'] // have que define a entidade comece com "#order_"
                 } // Só posso escrever valores do tipo string desde que a chave que define a entidade comece com "#order_"
             } // Condições para permitir o acesso a tabela
         })
