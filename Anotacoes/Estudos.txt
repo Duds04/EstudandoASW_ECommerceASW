@@ -5,3 +5,7 @@ package.json
 
 Facilita codificação de typescript no ambiente da AWS
     "@types/aws-lambda": "^8.10.125", 
+
+
+Abrir pasta do arquivo no windows:
+    cd "C:\Users\ViaConsulting\Documents\Estágio\Estudos\AWS\Projeto\ECommerceASW"

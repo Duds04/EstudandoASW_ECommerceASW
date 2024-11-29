@@ -170,7 +170,7 @@ export class OrdersAppStack extends cdk.Stack {
          */
         const eventsDdbPolicy = new iam.PolicyStatement({
             effect: iam.Effect.ALLOW, // Queremos permitir ou negar o acesso?
-            actions: ["dynamodb:PutItem"], // Qual(is) é(são) a ação(ões) que queremos permitir ou negar? (pode ser uma lista de açoes)
+            actions: ["dynamodb:PutItem"], // Qual(is) é(são) a(s) ação(ões) que queremos permitir ou negar? (pode ser uma lista de açoes)
             resources: [props.eventsDdb.tableArn], // Qual(is) é(são) o(s) recurso(s) [tabelas, stacks, etc..] que queremos permitir ou negar o acesso? (pode ser uma lista de recursos)
             conditions: {
                 ['ForAllValues:StringLike']: {

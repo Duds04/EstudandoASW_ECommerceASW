@@ -42,8 +42,8 @@ export class OrdersAppLayerStack extends cdk.Stack {
         })
 
         // Guardando a versão do layer para ser consultada pela stack de produtos
-        new ssm.StringParameter(this, "orderEventsLayerVersionArn", {
-            parameterName: "orderEventsLayerVersionArn",
+        new ssm.StringParameter(this, "OrderEventsLayerVersionArn", {
+            parameterName: "OrderEventsLayerVersionArn",
             stringValue: orderEventsLayer.layerVersionArn
         })
 
@@ -55,8 +55,8 @@ export class OrdersAppLayerStack extends cdk.Stack {
         })
 
         // Guardando a versão do layer para ser consultada pela stack de produtos
-        new ssm.StringParameter(this, "orderEventsRepositoryLayerVersionArn", {
-            parameterName: "orderEventsRepositoryLayerVersionArn",
+        new ssm.StringParameter(this, "OrderEventsRepositoryLayerVersionArn", {
+            parameterName: "OrderEventsRepositoryLayerArn",
             stringValue: orderEventsRepositoryLayer.layerVersionArn
         })
     } 
