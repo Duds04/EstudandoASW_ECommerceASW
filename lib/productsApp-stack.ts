@@ -104,7 +104,24 @@ export class ProductsAppStack extends cdk.Stack {
             insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
         })
         // Permitir gravar os eventos de produtos
-        props.eventsDdb.grantWriteData(productsEventsHandler)
+        // props.eventsDdb.grantWriteData(productsEventsHandler)
+
+        const eventsDdbPolicy = new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW, // Queremos permitir ou negar o acesso?
+            actions: ["dynamodb:PutItem"], // Qual(is) é(são) a(s) ação(ões) que queremos permitir ou negar? (pode ser uma lista de açoes)
+            resources: [props.eventsDdb.tableArn], // Qual(is) é(são) o(s) recurso(s) [tabelas, stacks, etc..] que queremos permitir ou negar o acesso? (pode ser uma lista de recursos)
+            conditions: {
+                ['ForAllValues:StringLike']: {
+                    'dynamodb:LeadingKeys': ['#product_*']
+                } 
+            } 
+        })
+
+        /**
+         * Adicionando a politica de acesso a função de eventos para que ela possa escrever na tabela de eventos
+         * 
+         */
+        productsEventsHandler.addToRolePolicy(eventsDdbPolicy)
 
 
         // cria a função lambda (tem os mesmos parametros padrões de um construtor de stack) (scope, id e propiedades)
@@ -181,23 +198,6 @@ export class ProductsAppStack extends cdk.Stack {
 
         // Função de eventos de produtos de está permitindo que a função de administração de produtos invoque ela
         productsEventsHandler.grantInvoke(this.productsAdminHandler)
-       
-        const eventsDdbPolicy = new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW, // Queremos permitir ou negar o acesso?
-            actions: ["dynamodb:PutItem"], // Qual(is) é(são) a(s) ação(ões) que queremos permitir ou negar? (pode ser uma lista de açoes)
-            resources: [props.eventsDdb.tableArn], // Qual(is) é(são) o(s) recurso(s) [tabelas, stacks, etc..] que queremos permitir ou negar o acesso? (pode ser uma lista de recursos)
-            conditions: {
-                ['ForAllValues:StringLike']: {
-                    'dynamodb:LeadingKeys': ['#product_*']
-                } 
-            } 
-        })
 
-        /**
-         * Adicionando a politica de acesso a função de eventos para que ela possa escrever na tabela de eventos
-         * 
-         */
-        productsEventsHandler.addToRolePolicy(eventsDdbPolicy)
-    
     }
 }
