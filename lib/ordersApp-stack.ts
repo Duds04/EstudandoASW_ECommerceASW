@@ -67,6 +67,10 @@ export class OrdersAppStack extends cdk.Stack {
         const orderEventsLayer = lambda.LayerVersion
             .fromLayerVersionArn(this, "OrderEventsLayerVersionArn", orderEventsLayerArn)
 
+        const orderEventsRepositoryLayerArn = ssm.StringParameter
+            .valueForStringParameter(this, "OrderEventsRepositoryLayerArn")
+        const orderEventsRepositoryLayer = lambda.LayerVersion
+            .fromLayerVersionArn(this, "OrderEventsRepositoryLayer", orderEventsRepositoryLayerArn)
 
         /**
          * Instanciando Layer de Produtos
@@ -147,7 +151,7 @@ export class OrdersAppStack extends cdk.Stack {
             environment: {
                 EVENTS_DDB: props.eventsDdb.tableName,  // Acessando a tabela de eventos
             },
-            layers: [orderEventsLayer], // Só precisa do layer de eventos
+            layers: [orderEventsLayer, orderEventsRepositoryLayer], // Só precisa do layer de eventos
             tracing: lambda.Tracing.ACTIVE,
             insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
         })
@@ -169,7 +173,7 @@ export class OrdersAppStack extends cdk.Stack {
             actions: ["dynamodb:PutItem"], // Qual(is) é(são) a ação(ões) que queremos permitir ou negar? (pode ser uma lista de açoes)
             resources: [props.eventsDdb.tableArn], // Qual(is) é(são) o(s) recurso(s) [tabelas, stacks, etc..] que queremos permitir ou negar o acesso? (pode ser uma lista de recursos)
             conditions: {
-                ['ForAllValues:StringLike']:{
+                ['ForAllValues:StringLike']: {
                     'dynamodb:LeadingKeys': ['"#order_*'] // have que define a entidade comece com "#order_"
                 } // Só posso escrever valores do tipo string desde que a chave que define a entidade comece com "#order_"
             } // Condições para permitir o acesso a tabela

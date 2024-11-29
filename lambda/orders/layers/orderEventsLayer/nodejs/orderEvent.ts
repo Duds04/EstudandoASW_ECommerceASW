@@ -1,7 +1,3 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
-// gerar um numero aleatorio para identificação unica do pedido
-import { v4 as uuid } from "uuid"
-
 // Tipos de eventos possiveis
 export enum OrderEventType {
     CREATED = "ORDER_CREATED",
