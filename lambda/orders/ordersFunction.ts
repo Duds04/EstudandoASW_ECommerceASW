@@ -176,7 +176,14 @@ function sendOrderEvent(order: Order, eventType: OrderEventType, lambdaRequestId
    return snsClient.publish({
       TopicArn: orderEventsTopicArn, // Amazon resorce name do tópico
       // Mensagem sendo enviada
-      Message: JSON.stringify(envelope) // Converte o objeto para string
+      Message: JSON.stringify(envelope), // Converte o objeto para string
+      MessageAttributes:{
+         // Posso definir um atributo de qualquer nome
+         eventType: {
+            DataType: 'String', // tipo do atributo
+            StringValue: eventType // valor do atributo (param do metodo, eventType)
+         }
+      } // Inserir atributo a ser publicado para ser feito depois a filtragem dos eventos recebidos por quem assina a função
    }).promise()
 }
 

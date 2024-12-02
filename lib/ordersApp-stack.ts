@@ -9,6 +9,10 @@ import * as iam from "aws-cdk-lib/aws-iam"
 import * as sns from "aws-cdk-lib/aws-sns"
 // Biblioteca para criar inscrição/assinatura de tópicos SNS
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions"
+// Biblioteca para criar filas SQS
+import * as sqs from "aws-cdk-lib/aws-sqs"
+// Biblioteca para configurar a fonte de envetos da função lambda
+import * as lambdaEventSource from "aws-cdk-lib/aws-lambda-event-sources"
 
 /**
  *  Precisa de um atributo de acesso a tabela de produtos 
@@ -184,5 +188,79 @@ export class OrdersAppStack extends cdk.Stack {
          * 
          */
         orderEventsHandler.addToRolePolicy(eventsDdbPolicy)
+
+        const billingHandler = new lambdaNodeJS.NodejsFunction(this, "BillingEventsFunction", {
+            runtime: lambda.Runtime.NODEJS_18_X,
+            functionName: "BillingEventsFunction",
+            entry: "lambda/orders/billingEventsFunction.ts",
+            handler: "handler",
+            memorySize: 128,
+            timeout: cdk.Duration.seconds(2),
+            bundling: {
+                minify: false,
+                sourceMap: true,
+            },
+            tracing: lambda.Tracing.ACTIVE,
+            insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+        })
+
+        orderTopic.addSubscription(new subs.LambdaSubscription(billingHandler, {
+            filterPolicy: {
+                // Filtrando eventos de pedidos que tenham o atributo eventType com o valores presentes na lista de permissão
+                // Poderia ter um lista para negar a inscrição tbm 
+                eventType: sns.SubscriptionFilter.stringFilter({
+                    allowlist: ["ORDER_CREATED"]
+                })
+            }
+        }))
+
+        // Criando a fila de eventos de pedidos
+        const orderEventsQueue = new sqs.Queue(this, "OrderEventsQueue", {
+            queueName: "order-events", //nome da fila
+
+            // Tirando o acesso criptografado a fila
+            enforceSSL: false,
+            encryption: sqs.QueueEncryption.UNENCRYPTED,
+        })
+
+        /**
+         *  Inscrevendo a fila de eventos de pedidos no tópico de eventos de pedidos
+         * 
+         *      Construir um filtro de inscrição na fila de eventos
+         */
+        orderTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue
+        //     , {
+        //     filterPolicy:{
+        //         eventType: sns.SubscriptionFilter.stringFilter({
+        //             allowlist: ["ORDER_CREATED"]
+        //         })
+        //     }
+        // }
+    ))
+
+
+
+
+        const orderEmailsHandler = new lambdaNodeJS.NodejsFunction(this, "OrderEmailsEventsFunction", {
+            runtime: lambda.Runtime.NODEJS_18_X,
+            functionName: "OrderEmailsEventsFunction",
+            entry: "lambda/orders/orderEmailsEventsFunction.ts",
+            handler: "handler",
+            memorySize: 128,
+            timeout: cdk.Duration.seconds(2),
+            bundling: {
+                minify: false,
+                sourceMap: true,
+            },
+            layers: [orderEventsLayer], // Vai receber um evento de pedido
+            tracing: lambda.Tracing.ACTIVE,
+            insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+        })
+
+        // Adicionando a fonte de eventos para a função orderEmailsHandler
+        orderEmailsHandler.addEventSource(new lambdaEventSource.SqsEventSource(orderEventsQueue))
+        // Dando permissão a função orderEmailsHandler de consumir mensagens da fila
+        orderEventsQueue.grantConsumeMessages(orderEmailsHandler)
+
     }
 }
