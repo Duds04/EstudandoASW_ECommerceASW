@@ -16,6 +16,9 @@ import { Construct } from "constructs"
 
 import * as iam from "aws-cdk-lib/aws-iam"
 
+import * as sqs from "aws-cdk-lib/aws-sqs"
+
+
 
 interface ProductsAppStackProps extends cdk.StackProps {
     // Tabela onde os eventos serão armazenados
@@ -82,6 +85,12 @@ export class ProductsAppStack extends cdk.Stack {
         const productEventsLayer = lambda.LayerVersion.fromLayerVersionArn(this, "ProductEventsLayerVersionArn", productEventsLayerArn)
 
 
+        const productsEventsDlq = new sqs.Queue(this, "ProductEventsDlq", {
+            queueName: "product-events-dlq",
+            enforceSSL: false,
+            encryption: sqs.QueueEncryption.UNENCRYPTED,
+            retentionPeriod: cdk.Duration.days(10), // Quanto tempo a mensagem pode ficar na fila 10 dias (padrão é 4)
+        })
 
 
         // Nenhuma outra stack fara referencia a essa tabela, logo não precisa ser um atributo de classe
@@ -102,6 +111,8 @@ export class ProductsAppStack extends cdk.Stack {
             layers: [productEventsLayer],
             tracing: lambda.Tracing.ACTIVE,
             insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+            deadLetterQueueEnabled: true,
+            deadLetterQueue: productsEventsDlq
         })
         // Permitir gravar os eventos de produtos
         // props.eventsDdb.grantWriteData(productsEventsHandler)

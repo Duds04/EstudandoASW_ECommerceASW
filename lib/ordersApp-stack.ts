@@ -214,13 +214,25 @@ export class OrdersAppStack extends cdk.Stack {
             }
         }))
 
+
+        const orderEventsDlq = new sqs.Queue(this, "OrderEventsDlq", {
+            queueName: "order-events-dlq",
+            enforceSSL: false,
+            encryption: sqs.QueueEncryption.UNENCRYPTED,
+            retentionPeriod: cdk.Duration.days(10), // Quanto tempo a mensagem pode ficar na fila 10 dias (padrão é 4)
+        })
+
+
         // Criando a fila de eventos de pedidos
         const orderEventsQueue = new sqs.Queue(this, "OrderEventsQueue", {
             queueName: "order-events", //nome da fila
-
             // Tirando o acesso criptografado a fila
             enforceSSL: false,
             encryption: sqs.QueueEncryption.UNENCRYPTED,
+            deadLetterQueue: {
+                maxReceiveCount: 3, // Quantas vezes a mensagem pode ser recebida (tentar tratar o erro) antes de ser enviada para a DLQ
+                queue: orderEventsDlq, // Fila de eventos de pedidos DLQ
+            }
         })
 
         /**
@@ -228,15 +240,13 @@ export class OrdersAppStack extends cdk.Stack {
          * 
          *      Construir um filtro de inscrição na fila de eventos
          */
-        orderTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue
-        //     , {
-        //     filterPolicy:{
-        //         eventType: sns.SubscriptionFilter.stringFilter({
-        //             allowlist: ["ORDER_CREATED"]
-        //         })
-        //     }
-        // }
-    ))
+        orderTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue, {
+            filterPolicy: {
+                eventType: sns.SubscriptionFilter.stringFilter({
+                    allowlist: ["ORDER_CREATED"]
+                })
+            }
+        }))
 
 
 
@@ -258,7 +268,11 @@ export class OrdersAppStack extends cdk.Stack {
         })
 
         // Adicionando a fonte de eventos para a função orderEmailsHandler
-        orderEmailsHandler.addEventSource(new lambdaEventSource.SqsEventSource(orderEventsQueue))
+        orderEmailsHandler.addEventSource(new lambdaEventSource.SqsEventSource(orderEventsQueue, /* {
+            batchSize: 5, // Esperar que cinco mensagens apareçam na fila antes de invocar a função
+            enabled: true,
+            maxBatchingWindow: cdk.Duration.minutes(1), // Tempo máximo que a fila vai espera para invocar a função (mesmo que não tenha 5 mensagens manda se passou 1 minuto)
+        } */))
         // Dando permissão a função orderEmailsHandler de consumir mensagens da fila
         orderEventsQueue.grantConsumeMessages(orderEmailsHandler)
 
