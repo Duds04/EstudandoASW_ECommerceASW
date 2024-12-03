@@ -51,5 +51,5 @@ export interface OrderResponse {
         type: ShippingType,
         carrier: CarrierType
     },
-    products: OrderProductResponse[]
+    products?: OrderProductResponse[] // o atributo pode não vir
 }

@@ -152,7 +152,7 @@ function sendOrderEvent(order: Order, eventType: OrderEventType, lambdaRequestId
    const productCodes: string[] = []
 
    // Para cada produto dentro da lista (order.products) vou adicionar o código do produto DESSA LISTA em outra lista denominada productCodes
-   order.products.forEach((product) => {
+   order.products?.forEach((product) => {
       productCodes.push(product.code)
    })
 
@@ -190,7 +190,8 @@ function sendOrderEvent(order: Order, eventType: OrderEventType, lambdaRequestId
 
 function convertToOrderResponse (order: Order): OrderResponse {
    const orderProducts: OrderProductResponse[] = []
-   order.products.forEach((product) => {
+   // se o atributo products não existir (opcional -> ?) ele não vai executar o forEach
+   order.products?.forEach((product) => {
       orderProducts.push({
          code: product.code,
          price: product.price
@@ -200,7 +201,7 @@ function convertToOrderResponse (order: Order): OrderResponse {
       email: order.pk,
       id: order.sk!,
       createdAt: order.createdAt!,
-      products: orderProducts,
+      products: orderProducts.length ? orderProducts : undefined, // se o tamanho for maior que zero manda a lista se não manda undefined
       billing: {
          payment: order.billing.payment as PaymentType,
          totalPrice: order.billing.totalPrice

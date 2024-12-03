@@ -21,7 +21,7 @@ export interface Order {
         payment: "CREDIT_CARD" | "DEBIT_CARD" | "CASH",
         totalPrice: number,
     }
-    products: OrderProduct[],	// lista de produtos de pedidos
+    products?: OrderProduct[],	// lista de produtos de pedidos (? -> opcional)
 }
 
 // Classe que representa o repositorio de pedidos
@@ -62,6 +62,8 @@ export class OrderRepository {
         // Obtendo todos os pedidos
         const data = await this.ddbClient.scan({
             TableName: this.ordersDdb,
+            // Passa quais os campos quero retornar
+            ProjectionExpression: "pk, sk, createdAt, shipping, billing" // não retornando todos os campos otimizando a busca
         }).promise()
 
         return data.Items as Order[]
@@ -77,14 +79,16 @@ export class OrderRepository {
             // Valor do email da pesquis é = ao email passado como parametro
            ExpressionAttributeValues: {
               ":email": email
-           }
+           },
+           ProjectionExpression: "pk, sk, createdAt, shipping, billing"
         }).promise()
         return data.Items as Order[]
      }
   
 
   
-    // Buscar pedido especifico
+    // Buscar pedido especifico 
+        // (Deixando a lista de produtos pois consideramos que é uma tela onde terá todas as infos desse pedido especifico)
     async getOrder(email: string, orderId: string): Promise<Order> {
         const data = await this.ddbClient.get({
             TableName: this.ordersDdb,
