@@ -275,6 +275,24 @@ export class OrdersAppStack extends cdk.Stack {
         } */))
         // Dando permissão a função orderEmailsHandler de consumir mensagens da fila
         orderEventsQueue.grantConsumeMessages(orderEmailsHandler)
+        
+        /**
+         * Dando permissão a função orderEmailsHandler de enviar e-mails
+         * 
+         * 
+         * Actions: ["ses:SendEmail", "ses:SendRawEmail"] --> Ações que a função pode fazer
+         *      "ses:SendEmail" --> Enviar e-mail
+         *      "ses:SendRawEmail" --> Enviar e-mail em formato bruto (com template)
+         * 
+         * 
+         * Pode fazer as ações definidas em qualquer recurso
+         */
+        const orderEmailSesPolicy = new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ["ses:SendEmail", "ses:SendRawEmail"],
+            resources: ["*"] // Qualquer recurso 
+        })
 
+        orderEmailsHandler.addToRolePolicy(orderEmailSesPolicy)
     }
 }

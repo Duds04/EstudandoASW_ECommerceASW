@@ -4,7 +4,7 @@ import { Product, ProductRepository } from "/opt/nodejs/productsLayer"
 import * as AWSXRay from "aws-xray-sdk"
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda"
 import { CarrierType, OrderProductResponse, OrderRequest, OrderResponse, PaymentType, ShippingType } from "/opt/nodejs/ordersApiLayer"
-import { OrderEvent, OrderEventType, Evelope } from "/opt/nodejs/orderEventsLayer"
+import { OrderEvent, OrderEventType, Envelope } from "/opt/nodejs/orderEventsLayer"
 import { v4 as uuid } from "uuid"
 
 AWSXRay.captureAWS(require("aws-sdk"))
@@ -166,7 +166,7 @@ function sendOrderEvent(order: Order, eventType: OrderEventType, lambdaRequestId
    }
 
    // Mensagem que será publicada
-   const envelope: Evelope = {
+   const envelope: Envelope = {
       eventType: eventType,
       data: JSON.stringify(orderEvent)
    }

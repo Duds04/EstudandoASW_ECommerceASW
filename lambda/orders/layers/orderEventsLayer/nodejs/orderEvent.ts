@@ -5,11 +5,11 @@ export enum OrderEventType {
 }
 
 // Interface que define o envelope  (O que será publicado no SNS)
-export interface Evelope {
+export interface Envelope {
     eventType: OrderEventType,
     data: string
 }
-///*  */
+
 // Formato do data evento (a ser passado para o data do envelope)
 export interface OrderEvent {
     email: string,

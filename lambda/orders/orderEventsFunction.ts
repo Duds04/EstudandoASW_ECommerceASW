@@ -2,7 +2,7 @@ import { OrderEventDdb, OrderEventRepository } from '/opt/nodejs/orderEventsRepo
 import * as AWSXRay from "aws-xray-sdk"
 import { AWSError, DynamoDB } from "aws-sdk"
 import { Context, SNSEvent, SNSMessage } from "aws-lambda"
-import { OrderEvent, Evelope } from "/opt/nodejs/orderEventsLayer"
+import { OrderEvent, Envelope } from "/opt/nodejs/orderEventsLayer"
 import { PromiseResult } from 'aws-sdk/lib/request';
 
 
@@ -59,7 +59,7 @@ export async function handler(event: SNSEvent, context: Context): Promise<void> 
  */
 function createEvent(body: SNSMessage){
 
-    const envelope = JSON.parse(body.Message) as Evelope // Pegando o corpo da mensagem e transformando em um objeto do tipo Evelope
+    const envelope = JSON.parse(body.Message) as Envelope // Pegando o corpo da mensagem e transformando em um objeto do tipo Envelope
 
     const event = JSON.parse(envelope.data) as OrderEvent // Pegando o data e convertendo para um objeto do tipo OrderEvent para criarmos a variavel que representa as informações (o data) do evento	
 
